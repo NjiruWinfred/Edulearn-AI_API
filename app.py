@@ -1,171 +1,134 @@
-{
- "cells": [
-  {
-   "cell_type": "code",
-   "execution_count": None,
-   "id": "67d7ee72-4ea9-499c-931b-62064239b63f",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "import os\n",
-    "import uvicorn\n",
-    "import pandas as pd\n",
-    "import numpy as np\n",
-    "\n",
-    "from fastapi import FastAPI\n",
-    "from pydantic import BaseModel\n",
-    "\n",
-    "from pymongo import MongoClient\n",
-    "\n",
-    "from sentence_transformers import SentenceTransformer\n",
-    "\n",
-    "from sklearn.neighbors import NearestNeighbors\n",
-    "\n",
-    "import google.generativeai as genai\n",
-    "\n",
-    "\n",
-    "# -----------------------------\n",
-    "# Load environment variables\n",
-    "# -----------------------------\n",
-    "\n",
-    "GOOGLE_API_KEY = os.getenv(\"GOOGLE_API_KEY\")\n",
-    "MONGO_URI = os.getenv(\"MONGO_URI\")\n",
-    "\n",
-    "genai.configure(api_key=GOOGLE_API_KEY)\n",
-    "\n",
-    "model = genai.GenerativeModel(\"gemini-1.5-flash\")\n",
-    "\n",
-    "\n",
-    "# -----------------------------\n",
-    "# FastAPI app\n",
-    "# -----------------------------\n",
-    "\n",
-    "app = FastAPI()\n",
-    "\n",
-    "\n",
-    "# -----------------------------\n",
-    "# Request schema\n",
-    "# -----------------------------\n",
-    "\n",
-    "class QuestionRequest(BaseModel):\n",
-    "    question: str\n",
-    "\n",
-    "\n",
-    "# -----------------------------\n",
-    "# MongoDB connection\n",
-    "# -----------------------------\n",
-    "\n",
-    "client = MongoClient(MONGO_URI)\n",
-    "\n",
-    "db = client[\"edulearn\"]\n",
-    "\n",
-    "collection = db[\"curriculum\"]\n",
-    "\n",
-    "\n",
-    "# -----------------------------\n",
-    "# Embedding model\n",
-    "# -----------------------------\n",
-    "\n",
-    "embedding_model = SentenceTransformer(\"all-MiniLM-L6-v2\")\n",
-    "\n",
-    "\n",
-    "# -----------------------------\n",
-    "# Retrieve context\n",
-    "# -----------------------------\n",
-    "\n",
-    "def retrieve_context(question):\n",
-    "\n",
-    "    question_embedding = embedding_model.encode([question])\n",
-    "\n",
-    "    documents = list(collection.find())\n",
-    "\n",
-    "    texts = [doc[\"content\"] for doc in documents]\n",
-    "\n",
-    "    embeddings = embedding_model.encode(texts)\n",
-    "\n",
-    "    nn = NearestNeighbors(n_neighbors=3)\n",
-    "\n",
-    "    nn.fit(embeddings)\n",
-    "\n",
-    "    distances, indices = nn.kneighbors(question_embedding)\n",
-    "\n",
-    "    context = \"\"\n",
-    "\n",
-    "    for i in indices[0]:\n",
-    "        context += texts[i] + \"\\n\"\n",
-    "\n",
-    "    return context\n",
-    "\n",
-    "\n",
-    "# -----------------------------\n",
-    "# Generate answer\n",
-    "# -----------------------------\n",
-    "\n",
-    "def generate_answer(question):\n",
-    "\n",
-    "    context = retrieve_context(question)\n",
-    "\n",
-    "    prompt = f\"\"\"\n",
-    "    Answer the question using the curriculum context.\n",
-    "\n",
-    "    Context:\n",
-    "    {context}\n",
-    "\n",
-    "    Question:\n",
-    "    {question}\n",
-    "    \"\"\"\n",
-    "\n",
-    "    response = model.generate_content(prompt)\n",
-    "\n",
-    "    return response.text\n",
-    "\n",
-    "\n",
-    "# -----------------------------\n",
-    "# API endpoint\n",
-    "# -----------------------------\n",
-    "\n",
-    "@app.post(\"/ask\")\n",
-    "\n",
-    "def ask_bot(request: QuestionRequest):\n",
-    "\n",
-    "    question = request.question\n",
-    "\n",
-    "    answer = generate_answer(question)\n",
-    "\n",
-    "    return {\"response\": answer}\n",
-    "\n",
-    "\n",
-    "# -----------------------------\n",
-    "# Run server\n",
-    "# -----------------------------\n",
-    "\n",
-    "if __name__ == \"__main__\":\n",
-    "\n",
-    "    port = int(os.environ.get(\"PORT\", 10000))\n",
-    "\n",
-    "    uvicorn.run(app, host=\"0.0.0.0\", port=port)"
-   ]
-  }
- ],
- "metadata": {
-  "kernelspec": {
-   "display_name": "Python [conda env:base] *",
-   "language": "python",
-   "name": "conda-base-py"
-  },
-  "language_info": {
-   "codemirror_mode": {
-    "name": "ipython",
-    "version": 3
-   },
-   "file_extension": ".py",
-   "mimetype": "text/x-python",
-   "name": "python",
-   "nbconvert_exporter": "python",
-   "pygments_lexer": "ipython3",
-   "version": "3.13.9"
-  }
- },
- "nbformat": 4,
- "nbformat_minor": 5
-}
+import os
+import uvicorn
+import pandas as pd
+import numpy as np
+
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+from pymongo import MongoClient
+from sentence_transformers import SentenceTransformer
+from sklearn.neighbors import NearestNeighbors
+
+import google.generativeai as genai
+
+
+# -----------------------------
+# Load environment variables
+# -----------------------------
+
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+MONGO_URI = os.getenv("MONGO_URI")
+
+genai.configure(api_key=GOOGLE_API_KEY)
+
+model = genai.GenerativeModel("gemini-2.5-flash")
+
+
+# -----------------------------
+# FastAPI app
+# -----------------------------
+
+app = FastAPI()
+
+
+# -----------------------------
+# Request schema
+# -----------------------------
+
+class QuestionRequest(BaseModel):
+    question: str
+
+
+# -----------------------------
+# MongoDB connection
+# -----------------------------
+
+client = MongoClient(MONGO_URI)
+
+db = client["edulearn"]
+
+collection = db["curriculum"]
+
+
+# -----------------------------
+# Embedding model
+# -----------------------------
+
+embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+
+
+# -----------------------------
+# Retrieve context
+# -----------------------------
+
+def retrieve_context(question):
+
+    question_embedding = embedding_model.encode([question])
+
+    documents = list(collection.find())
+
+    texts = [doc["content"] for doc in documents]
+
+    embeddings = embedding_model.encode(texts)
+
+    nn = NearestNeighbors(n_neighbors=3)
+
+    nn.fit(embeddings)
+
+    distances, indices = nn.kneighbors(question_embedding)
+
+    context = ""
+
+    for i in indices[0]:
+        context += texts[i] + "\n"
+
+    return context
+
+
+# -----------------------------
+# Generate answer
+# -----------------------------
+
+def generate_answer(question):
+
+    context = retrieve_context(question)
+
+    prompt = f"""
+Answer the question using the curriculum context.
+
+Context:
+{context}
+
+Question:
+{question}
+"""
+
+    response = model.generate_content(prompt)
+
+    return response.text
+
+
+# -----------------------------
+# API endpoint
+# -----------------------------
+
+@app.post("/ask")
+def ask_bot(request: QuestionRequest):
+
+    question = request.question
+
+    answer = generate_answer(question)
+
+    return {"response": answer}
+
+
+# -----------------------------
+# Run server
+# -----------------------------
+
+if __name__ == "__main__":
+
+    port = int(os.environ.get("PORT", 10000))
+
+    uvicorn.run(app, host="0.0.0.0", port=port)
