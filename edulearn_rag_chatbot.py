@@ -43,7 +43,7 @@ MONGODB_CONNECTION_STRING = os.getenv(
     "mongodb+srv://winniemutitu_db_user:3YjLUw0l5ekVlUDq@edulearn.4mcdat3.mongodb.net/?appName=Edulearn"
 )
 MONGODB_DATABASE_NAME = os.getenv("MONGODB_DATABASE_NAME", "edulearn")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-exp")
 
 # Logging configuration
 logging.basicConfig(
