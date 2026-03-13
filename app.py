@@ -13,6 +13,7 @@ from sklearn.neighbors import NearestNeighbors
 import google.generativeai as genai
 
 
+
 # -----------------------------
 # Load environment variables
 # -----------------------------
@@ -117,6 +118,7 @@ Question:
 def health():
     return {"status": "running"}
     
+@app.post("/ask")  
 def ask_bot(request: QuestionRequest):
 
     question = request.question
