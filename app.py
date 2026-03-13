@@ -113,7 +113,10 @@ Question:
 # API endpoint
 # -----------------------------
 
-@app.post("/ask")
+@app.get("/")
+def health():
+    return {"status": "running"}
+    
 def ask_bot(request: QuestionRequest):
 
     question = request.question
