@@ -134,6 +134,6 @@ def ask_bot(request: QuestionRequest):
 
 if __name__ == "__main__":
 
-    port = int(os.environ.get("PORT",62567))
+    port = int(os.environ.get("PORT", 1000 ))
 
     uvicorn.run(app, host="0.0.0.0", port=port)
